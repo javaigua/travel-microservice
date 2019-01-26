@@ -1,0 +1,65 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: casex01
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: info,health,prometheus,metrics,httptrace,threaddump,heapdump
+        exclude: flyway
+  metrics:
+    web:
+      server:
+        auto-time-requests: true
+
+task-executors:
+  web-tasks:
+    core-pool-size: 30
+    max-pool-size: 300
+    queue-capacity: 300
+    thread-name-prefix: web-task-
+  async-tasks:
+    core-pool-size: 30
+    max-pool-size: 300
+    queue-capacity: 300
+    thread-name-prefix: async-task-
+
+rest-template:
+  connection-manager:
+    max-total: 400
+    default-max-per-route: 100
+    validate-after-inactivity: 500
+    socket-config:
+      tcp-no-delay: true
+      so-keep-alive: true
+      so-reuse-address: true
+  request-factory:
+    read-timeout: 70000
+    connect-timeout:  10000
+    connection-request-timeout: 0
+    buffer-request-body: true
+
+simple-travel-service:
+  base-url: ${SIMPLE_TRAVEL_SERVICE_BASE_URL:http://localhost:8080}
+  endpoints:
+    oauth:
+      path: /oauth/token?grant_type=client_credentials
+      client-id: travel-api-client
+      secret: psw
+    airports:
+      path: /airports
+    airport:
+      path: /airports/{0}
+    fares:
+      path: /fares/{0}/{1}
+
+logging:
+  level:
+    com.klm.casex01: INFO
+    org.springframework: INFO

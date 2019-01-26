@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KLM Case X01 - By Javier Igua</title>
+    <link rel="stylesheet" type="text/css" href="webjars/bootstrap/4.2.1/css/bootstrap.min.css"/>
+    <link rel="stylesheet" type="text/css" href="css/easy-autocomplete.min.css">
+    <link rel="stylesheet" type="text/css" href="css/easy-autocomplete.themes.min.css">
+</head>
+
+<body class="bg-light">
+<header class="navbar navbar-expand flex-column flex-md-row bd-navbar" style="padding-bottom: 0px; padding-top: 0px; padding-left: 0px; padding-right: 0px; height: 20px;">
+    <ul class="navbar-nav flex-row ml-md-auto d-none d-md-flex">
+        <li class="nav-item dropdown">
+            <a id="lang" class="nav-item nav-link dropdown-toggle mr-md-2" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                EN
+            </a>
+            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="bd-versions">
+                <a class="dropdown-item" href="#">EN</a>
+                <a class="dropdown-item" href="#">NL</a>
+            </div>
+        </li>
+        <li class="nav-item dropdown">
+            <a id="currency" class="nav-item nav-link dropdown-toggle mr-md-2" href="#" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                EUR
+            </a>
+            <div class="dropdown-menu dropdown-menu-right" aria-labelledby="bd-versions">
+                <a class="dropdown-item" href="#">EUR</a>
+                <a class="dropdown-item" href="#">USD</a>
+            </div>
+        </li>
+    </ul>
+</header>
+<div class="container">
+    <div class="jumbotron text-center">
+        <h2>KLM Case X01 - By Javier Igua</h2>
+        <p class="lead">Find your perfect flight!</p>
+    </div>
+    <div class="row">
+        <div class="col-md-6 order-md-6 mb-4">
+            <span class="text-muted">Enter city, airport (code) or country</span>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label>From:</label>
+                    <input id="origin" type="text" class="form-control"/>
+                    <input id="origin-holder" type="hidden" />
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label>To:</label>
+                    <input id="destination" type="text" class="form-control"/>
+                    <input id="destination-holder" type="hidden" />
+                </div>
+            </div>
+            <hr class="mb-4">
+            <h4 class="mb-3">Flight fare</h4>
+            <div id="spinner" class="col-md-12 mb-3" style="display: none">
+                <div class="col-md-12 mb-3">
+                    <div class="d-flex justify-content-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" id="fare" style="display: none" class="d-flex justify-content-center">
+                <div class="col-md-4 mb-3">
+                    <div>
+                        <h6 id="originCode" class="my-0"></h6>
+                        <h6 id="originName" class="my-0"></h6>
+                        <small id="originDesc" class="text-muted"></small>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div>
+                        <h6 id="destinationCode" class="my-0"></h6>
+                        <h6 id="destinationName" class="my-0"></h6>
+                        <small id="destinationDesc" class="text-muted"></small>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div>
+                        <h6 class="my-0">
+                            <span id="fairAmount" class="text-success"></span>
+                            <span id="fairCurrency" class="text-success"></span>
+                        </h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 order-md-6 mb-4">
+            <canvas id="statsChart"></canvas>
+        </div>
+    </div>
+</div>
+</body>
+
+<script type="text/javascript" src="webjars/jquery/3.3.1-1/jquery.min.js"></script>
+<script type="text/javascript" src="webjars/bootstrap/4.2.1/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="js/jquery.easy-autocomplete.min.js"></script>
+<script type="text/javascript" src="js/chart.js"></script>
+<script type="text/javascript" src="js/popper.min.js"></script>
+
+<script type="text/javascript">
+    // location and fare handling
+    function getFare() {
+        var originCode = $("#origin-holder").val();
+        var destinationCode = $("#destination-holder").val();
+
+        if(originCode && destinationCode) {
+            $("#spinner").toggle();
+            $("#fare").hide();
+
+            $.ajax({
+                url: "fare?origin=" + originCode + "&destination=" + destinationCode + "&lang=" + getPickedLang()+ "&currency=" + getPickedCurrency(),
+                async: true,
+                dataType: 'json',
+                type: "get"
+            }).done(function(data) {
+                $("#spinner").toggle();
+
+                $("#originCode").text(data.origin.code);
+                $("#originName").text(data.origin.name);
+                $("#originDesc").text(data.origin.description);
+
+                $("#destinationCode").text(data.destination.code);
+                $("#destinationName").text(data.destination.name);
+                $("#destinationDesc").text(data.destination.description);
+
+                $("#fairAmount").text(data.fare.amount);
+                $("#fairCurrency").text(data.fare.currency);
+
+                $("#fare").show(0);
+            });
+        }
+    }
+
+    var originOptions = {
+        placeholder: "Your origin",
+        matchResponseProperty: "term",
+        url: function(phrase) {
+            return "location?term=" + phrase + "&lang=" + getPickedLang();
+        },
+        listLocation: function(element) {
+            return element._embedded.locations;
+        },
+        getValue: "description",
+        list: {
+            onChooseEvent: function() {
+                originPicked();
+            }
+        }
+    };
+
+    var destinationOptions = {
+        placeholder: "Your destination",
+        matchResponseProperty: "term",
+        url: function(phrase) {
+            return "location?term=" + phrase + "&lang=" + getPickedLang();
+        },
+        listLocation: function(element) {
+            return element._embedded.locations;
+        },
+        getValue: "description",
+        list: {
+            onChooseEvent: function() {
+                destinationPicked();
+            }
+        }
+    };
+
+    $("#origin").easyAutocomplete(originOptions);
+    $("#destination").easyAutocomplete(destinationOptions);
+
+    //chart handling
+    var ctx = document.getElementById("statsChart").getContext('2d');
+    var statsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: "Total requests",
+                    data: [],
+                    borderColor: ['rgb(247, 39, 230)'],
+                    backgroundColor: ['rgba(247, 39, 230, .2)'],
+                    borderWidth: 1,
+                    yAxisID: 'total-reqs-y-axis'
+                },
+                {
+                    label:  "Total requests 2XX",
+                    data: [],
+                    borderColor: ['rgb(8, 226, 11)'],
+                    backgroundColor: ['rgba(8, 226, 11, .2)'],
+                    borderWidth: 1,
+                    yAxisID: 'total-reqs-2XX-y-axis'
+                },
+                {
+                    label: "Total requests 4XX",
+                    data: [],
+                    borderColor: ['rgb(249, 147, 4)'],
+                    backgroundColor: ['rgba(249, 147, 4, .2)'],
+                    borderWidth: 1,
+                    yAxisID: 'total-reqs-4XX-y-axis'
+                },
+                {
+                    label: "Total requests 5XX",
+                    data: [],
+                    borderColor: ['rgb(226, 8, 8)'],
+                    backgroundColor: ['rgba(226, 8, 8, .2)'],
+                    borderWidth: 1,
+                    yAxisID: 'total-reqs-5XX-y-axis'
+                },
+                {
+                    label: "Avg response time (ms)",
+                    data: [],
+                    borderColor: ['rgb(0, 54, 219)'],
+                    backgroundColor: ['rgba(0, 54, 219, .2)'],
+                    borderWidth: 1,
+                    yAxisID: 'avg-res-y-axis'
+                },
+                {
+                    label: "Max response time (ms)",
+                    data: [],
+                    borderColor: ['rgb(127, 8, 226)'],
+                    backgroundColor: ['rgba(127, 8, 226, .2)'],
+                    borderWidth: 1,
+                    yAxisID: 'max-res-y-axis'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                yAxes: [{
+                    display: true,
+                    ticks: {
+                        beginAtZero: true,
+                        suggestedMin: 0
+                    }
+                }]
+            },
+            scales: {
+                yAxes: [{
+                    id: 'total-reqs-y-axis',
+                    type: 'linear'
+                }, {
+                    id: 'total-reqs-2XX-y-axis',
+                    type: 'linear'
+                }, {
+                    id: 'total-reqs-4XX-y-axis',
+                    type: 'linear'
+                }, {
+                    id: 'total-reqs-5XX-y-axis',
+                    type: 'linear'
+                }, {
+                    id: 'avg-res-y-axis',
+                    type: 'logarithmic'
+                }, {
+                    id: 'max-res-y-axis',
+                    type: 'logarithmic'
+                }]
+            }
+        }
+    });
+
+    (function worker() {
+        $.ajax({
+            url: 'stats',
+            success: function(statsData) {
+                if(statsChart.data.labels.length >= 120) {
+                    statsChart.data.labels.shift();
+                    statsChart.data.datasets[0].data.shift();
+                    statsChart.data.datasets[1].data.shift();
+                    statsChart.data.datasets[2].data.shift();
+                    statsChart.data.datasets[3].data.shift();
+                    statsChart.data.datasets[4].data.shift();
+                    statsChart.data.datasets[5].data.shift();
+                }
+
+                var now = new Date();
+                var labelValue = now.toLocaleTimeString("en-us", {hour: "2-digit", minute: "2-digit", second: "2-digit"});
+                statsChart.data.labels.push(labelValue);
+                statsChart.data.datasets[0].data.push(statsData.totalRequests);
+                statsChart.data.datasets[1].data.push(statsData.totalRequests2XX);
+                statsChart.data.datasets[2].data.push(statsData.totalRequests4XX);
+                statsChart.data.datasets[3].data.push(statsData.totalRequests5XX);
+                statsChart.data.datasets[4].data.push(statsData.avgResponseTimeMs);
+                statsChart.data.datasets[5].data.push(statsData.maxResponseTimeMs);
+
+                statsChart.update();
+            },
+            complete: function() {
+                setTimeout(worker, 2500);
+            }
+        });
+    })();
+
+    // lang and currency handling
+    $(".navbar-nav li a").click(function(){
+        $(this).parents(".dropdown").find('.nav-item').html($(this).text() + ' <span class="caret"></span>');
+        $(this).parents(".dropdown").find('.nav-item').val($(this).data('value'));
+    });
+
+    //utilities
+    function originPicked() {
+        var originCode = $("#origin").getSelectedItemData().code;
+        $("#origin-holder").val(originCode).trigger("change");
+        getFare();
+    }
+
+    function destinationPicked() {
+        var destinationCode = $("#destination").getSelectedItemData().code;
+        $("#destination-holder").val(destinationCode).trigger("change");
+        getFare();
+    }
+
+    function getPickedLang() {
+        return $("#lang").text().trim();
+    }
+
+    function getPickedCurrency() {
+        return $("#currency").text().trim();
+    }
+
+</script>
+</html>

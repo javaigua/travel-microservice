@@ -1,0 +1,104 @@
+version: '2.4'
+
+volumes:
+    prometheus_data: {}
+    grafana_data: {}
+
+services:
+
+  mock:
+    image: openjdk:8-jdk-alpine
+    hostname: simple-travel-api
+    expose:
+      - 8080
+    ports:
+      - 8080:8080
+    volumes:
+      - ./modules/simple-travel-api-mock:/simple-travel-api-mock
+    working_dir: /simple-travel-api-mock
+    command: ./gradlew bootRun
+    networks:
+      vpcbr:
+        ipv4_address: 10.2.0.2
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  casex01:
+    image: openjdk:8-jdk-alpine
+    hostname: casex01
+    expose:
+      - 8081
+      - 5005
+    ports:
+      - 8081:8081
+      - 5005:5005
+    volumes:
+      - ./modules/casex01:/casex01
+    working_dir: /casex01
+    command: ./gradlew bootRun #--debug-jvm
+    extra_hosts:
+     - "simple-travel-api:10.2.0.2"
+    networks:
+      vpcbr:
+        ipv4_address: 10.2.0.3
+    environment:
+      - "SIMPLE_TRAVEL_SERVICE_BASE_URL=http://simple-travel-api:8080"
+    depends_on:
+      - mock
+    links:
+      - mock
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  prometheus:
+    image: prom/prometheus
+    hostname: prometheus
+    volumes:
+      - ./monitor/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+    volumes:
+      - ./config/prometheus/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    depends_on:
+      - casex01
+    extra_hosts:
+     - "casex01:10.2.0.3"
+    networks:
+      vpcbr:
+        ipv4_address: 10.2.0.4
+
+  grafana:
+    image: grafana/grafana
+    hostname: grafana
+    ports:
+      - 3000:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./config/grafana/provisioning/:/etc/grafana/provisioning/
+    depends_on:
+      - prometheus
+    extra_hosts:
+     - "prometheus:10.2.0.4"
+    networks:
+      vpcbr:
+        ipv4_address: 10.2.0.5
+
+networks:
+  vpcbr:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.2.0.0/16
+         gateway: 10.2.0.1

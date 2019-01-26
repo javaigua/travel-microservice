@@ -1,0 +1,68 @@
+description = 'casex01'
+buildscript {
+    repositories {
+        maven {
+            url 'http://repo.spring.io/plugins-release'
+        }
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'io.spring.gradle', name: 'dependency-management-plugin', version: '0.6.1.RELEASE'
+        classpath group: 'org.springframework.boot', name: 'spring-boot-gradle-plugin', version: '2.0.0.RELEASE'
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    verLombok = "1.18.4"
+    verHttpclient = "4.5.6"
+    verPrometheus = "1.1.2"
+    verSpringboot = "2.1.2.RELEASE"
+    verSpringcloud = "2.0.2.RELEASE"
+    verBootstrap = "4.2.1"
+    verJquery = "3.3.1-1"
+    verWiremock = "2.20.0"
+}
+
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+compileJava {
+    options.fork = true
+    options.forkOptions.executable = "javac" // assumes that javac is on PATH
+    options.compilerArgs << "-XDignore.symbol.file"
+}
+
+springBoot {
+    mainClassName = 'com.klm.casex01.Casex01Application'
+}
+
+dependencies {
+    compileOnly group: 'org.projectlombok', name: 'lombok', version: verLombok
+    compile group: 'org.apache.httpcomponents', name: 'httpclient', version: verHttpclient
+    compile group: 'io.micrometer', name: 'micrometer-registry-prometheus', version: verPrometheus
+    compile group: 'org.webjars', name: 'bootstrap', version: verBootstrap
+    compile group: 'org.webjars', name: 'jquery', version: verJquery
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-web', version: verSpringboot, {
+        exclude module: "spring-boot-starter-tomcat"
+    }
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-jetty', version: verSpringboot
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-actuator', version: verSpringboot
+    compile group: 'org.springframework.cloud', name: 'spring-cloud-starter-sleuth', version: verSpringcloud
+    testCompile group: 'org.springframework.boot', name: 'spring-boot-starter-test', version: verSpringboot
+    testCompile group: 'com.github.tomakehurst', name: 'wiremock-standalone', version: verWiremock
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.5.1'
+}

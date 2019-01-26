@@ -1,0 +1,4 @@
+include 'modules:casex01'
+findProject(':modules:casex01')?.name = 'casex01'
+include 'modules:simple-travel-api-mock'
+findProject(':modules:simple-travel-api-mock')?.name = 'simple-travel-api-mock'
