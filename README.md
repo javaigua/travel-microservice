@@ -32,6 +32,13 @@ cd modules/casex01
 ./gradlew clean :modules:casex01:test
 ```
 
+### Load tests
+Simulate some traffic with [loadtest](https://www.npmjs.com/package/loadtest)
+```
+loadtest -c 1 --rps 1 -t 60 -m GET http://localhost:8081/fare\?origin\=BOG\&destination\=AMS
+```
+
+
 ## Screen Shots
 
 ![CaseX01 Web ScreenShot](etc/ScreenShotWebApp.png?raw=true "CaseX01 Web Interface")
