@@ -10,8 +10,9 @@ A take-home-assignment, by Javier Igua.
 docker-compose up &
 ```
 
-Open a browser at [http://localhost:8081](http://localhost:8081) for Travel Web Client Application interface
-Open a browser at [http://localhost:3000](http://localhost:3000) for Grafana monitoring, go to `Dashboards` > `Manage` and click on `JVM(Micrometer)`
+Open a browser at [http://localhost:8081](http://localhost:8081) for Travel Web Client Application interface.
+
+Open a browser at [http://localhost:3000](http://localhost:3000) for Grafana monitoring, go to `Dashboards` > `Manage` and click on `JVM(Micrometer)`.
 
 ### Run independently with Gradle
 Run the Simple Travel API mock
